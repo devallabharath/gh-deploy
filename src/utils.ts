@@ -1,10 +1,18 @@
-import { exec } from 'child_process'
+import { exec, ExecException } from 'child_process'
 import { gitType } from './types'
+
+const ErrMsg = (title: string, dir: string, e: ExecException, err: string) => {
+  const parts = e.toString().split(':')
+  return `${title}: ${parts[1]} \n dir: ${dir} \n ${err.replace('sh: ', '')}`
+}
 
 function shell(dir: string, cmd: string, msg: string): Promise<string> {
   return new Promise(function (resolve, reject) {
     exec(`cd ${dir} && ${cmd}`, (e, out, err) => {
-      if (e) return reject(msg)
+      if (e) {
+        e.toString().replace('Error', msg)
+        return reject(ErrMsg(msg, dir, e, err))
+      }
       return resolve(out.trim())
     })
   })
