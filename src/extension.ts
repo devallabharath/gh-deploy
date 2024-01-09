@@ -179,7 +179,7 @@ export function activate(context: ExtensionContext) {
   }
 
   const Deploy = (Root: string, Folder: string, To: string, Commit: string) =>
-    shell(Root, `git --work-tree build checkout --orphan ${To}-deploy`, 'Unable to checkout')
+    shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Unable to checkout')
       .then(() => shell(Root, `git --work-tree ${Folder} add --all`, 'Unable to stage files'))
       .then(() =>
         shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Unable to commit')
