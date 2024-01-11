@@ -8,7 +8,7 @@ const defaultConfig: any = {
   defaultToBranch: 'website',
   defaultFolder: 'build',
   defaultCommitMessage: 'update',
-  defaultPreTask: 'npm run build',
+  defaultPreTask: 'skip',
 }
 
 export function activate(context: ExtensionContext) {
@@ -30,7 +30,7 @@ export function activate(context: ExtensionContext) {
     if (typeof git === 'string') return Promise.reject(git)
     const config = workspace.getConfiguration('gh-deploy')
     const Get = (id: string): string => {
-      let value = config.get(id)
+      const value = config.get(id)
       if (!value || value === ' ' || value === '') return defaultConfig[id] as string
       return value as string
     }
@@ -54,29 +54,31 @@ export function activate(context: ExtensionContext) {
       .then(() => shell(Root, 'git pull', 'Unable to pull the repo'))
       .catch(msg => Promise.reject(msg))
 
-  const stashChanges = (Root: string) => {
-    quickInput('GH-Pages: Stash files (1/6)', 'Enter a name to stash..', 'Stash Name').then(
-      name => {
-        if (!name || name === '') return Promise.reject('User cancelled')
-        shell(Root, `git stash save '${name}'`, 'failed to stash')
-          .then(() => Promise.resolve(name))
-          .catch(msg => Promise.reject(msg))
-      }
+  const stashChanges = async (Root: string) => {
+    const name = await quickInput(
+      'GH-Pages: Stash files (1/6)',
+      'Enter a name to stash..',
+      'Stash Name'
     )
+    if (!name || name === '') return Promise.reject(new Error('User cancelled'))
+    const msg = await shell(Root, `git stash save '${name}'`, 'failed to stash')
+    if (msg === 'failed to stash') return Promise.reject(msg)
+    return Promise.resolve(name)
   }
 
   const resolveChanges = (Root: string) =>
-    shell(Root, 'git status --porcelain', 'failed to get status')
-      .then(async msg => {
-        if (msg === '') return Promise.resolve(true)
+    shell(Root, 'git status --porcelain', 'Git status')
+      .then(async status => {
+        if (status === '') return Promise.resolve(true)
         const proceed = await quickPick(
           ['Stash them', 'Exit'],
           'GH-Pages: Uncommited Files',
           'You have uncommited changes, stash to continue...'
         )
-        if (!proceed || proceed === 'Exit') return Promise.reject('user cancelled')
-        stashChanges(Root)
+        if (!proceed || proceed === 'Exit') return Promise.reject(new Error('user cancelled'))
+        return Promise.resolve()
       })
+      .then(() => stashChanges(Root))
       .catch(msg => Promise.reject(msg))
 
   const resolveFromBranch = async (Locals: string[]) => {
@@ -114,7 +116,6 @@ export function activate(context: ExtensionContext) {
         'Select an option for deploy "Folder"'
       )
       if (!option) return 'User cancelled'
-      console.log(option)
       return option
     }
     const input = async () => {
@@ -124,7 +125,6 @@ export function activate(context: ExtensionContext) {
         'Folder Name'
       )
       if (!folder) return 'User cancelled'
-      console.log(folder)
       return folder
     }
     let possible = defaults.filter(dir => fs.existsSync(`${Root}/${dir}`))
@@ -142,13 +142,6 @@ export function activate(context: ExtensionContext) {
   }
 
   const resolveCommit = async (defaultMsg: string) => {
-    const proceed = await quickPick(
-      [`Default: '${defaultMsg}'`, 'Other'],
-      'GH-Pages: Commit Message (4/6)',
-      'Select an option for "Commit" message'
-    )
-    if (!proceed) return 'User cancelled'
-    if (proceed === `Default: '${defaultMsg}'`) return defaultMsg
     const commit: any = await quickInput(
       'GH-Pages: Commit Message (4/6)',
       'Ex: version v0.5, Hotfix-#21',
@@ -161,11 +154,12 @@ export function activate(context: ExtensionContext) {
 
   const resolveTask = async (Task: string) => {
     const proceed = await quickPick(
-      [`Default: '${Task}'`, 'Other'],
+      Task === 'skip' ? ['Default: Skip', 'Other'] : [`Default: '${Task}'`, 'Other', 'Skip'],
       'GH-Pages: Pre Deploy Task (5/6)',
       'Select an option for preDeploy "Task"'
     )
     if (!proceed) return 'User cancelled'
+    if (proceed === 'Skip' || proceed === 'Default: Skip') return 'echo'
     if (proceed === `Default: '${Task}'`) return Task
     const task = await quickInput(
       'GH-Pages: Pre Deploy Task (5/6)',
@@ -188,20 +182,20 @@ export function activate(context: ExtensionContext) {
   }
 
   const Deploy = (Root: string, Folder: string, To: string, Commit: string) =>
-    shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Unable to checkout')
-      .then(() => shell(Root, `git --work-tree ${Folder} add --all`, 'Unable to stage files'))
+    shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Git checkout')
+      .then(() => shell(Root, `git --work-tree ${Folder} add --all`, 'Staging files'))
       .then(() =>
-        shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Unable to commit')
+        shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Git commit')
       )
-      .then(() => shell(Root, `git push origin HEAD:${To} --force`, 'Unable to push'))
+      .then(() => shell(Root, `git push origin HEAD:${To} --force`, 'Git push'))
       .catch(msg => Promise.reject(msg))
 
   const cleanUp = async (Root: string, To: string, Prev: string) =>
-    shell(Root, `git checkout -f ${Prev}`, 'Unable to switch previous branch')
-      .then(() => shell(Root, `git branch -D ${To}-deploy`, 'Unable to delete temp branch'))
+    shell(Root, `git checkout -f ${Prev}`, 'Git checkout')
+      .then(() => shell(Root, `git branch -D ${To}-deploy`, 'Clean up'))
       .catch(msg => Promise.reject(msg))
 
-  let disposable = commands.registerCommand('gh-deploy.deploy', () => {
+  const disposable = commands.registerCommand('gh-deploy.deploy', () => {
     Config()
       .then(({ git, fromBranch, toBranch, folder, commit, preTask }) => {
         Promise.resolve()
@@ -213,15 +207,15 @@ export function activate(context: ExtensionContext) {
                 cancellable: false,
               },
               async (progress, token) => {
-                token.onCancellationRequested(() => Promise.reject('User cancelled'))
-                progress.report({ increment: 0, message: 'Resolving Current Branch...' })
-                return resolveCurrent(git.Root, fromBranch)
+                // token.onCancellationRequested(() => Promise.reject('User cancelled'))
+                progress.report({ increment: 0, message: 'Looking for changes...' })
+                return resolveChanges(git.Root)
                   .then(() => {
-                    progress.report({ increment: 20, message: 'Looking for changes...' })
-                    return resolveChanges(git.Root)
+                    progress.report({ increment: 20, message: 'Getting Things Ready...' })
+                    return resolveCurrent(git.Root, fromBranch)
                   })
                   .then(() => {
-                    progress.report({ increment: 40, message: 'Running Pre Deploy...' })
+                    progress.report({ increment: 40, message: 'Running Pre Deploy Task...' })
                     return shell(git.Root, preTask, 'PreDeploy')
                   })
                   .then(() => {
@@ -229,7 +223,7 @@ export function activate(context: ExtensionContext) {
                     return Deploy(git.Root, folder, toBranch, commit)
                   })
                   .then(() => {
-                    progress.report({ increment: 80, message: 'Finishing things...' })
+                    progress.report({ increment: 80, message: 'Finishing Up...' })
                     return cleanUp(git.Root, toBranch, git.Current)
                   })
                   .then(() => {
