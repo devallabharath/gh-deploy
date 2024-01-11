@@ -49,11 +49,6 @@ export function activate(context: ExtensionContext) {
     return Promise.resolve({ git, fromBranch, toBranch, folder, commit, preTask })
   }
 
-  const resolveCurrent = (Root: string, From: string) =>
-    shell(Root, `git switch ${From}`, `'${From}' not found`)
-      .then(() => shell(Root, 'git pull', 'Unable to pull the repo'))
-      .catch(msg => Promise.reject(msg))
-
   const stashChanges = async (Root: string) => {
     const name = await quickInput(
       'GH-Pages: Stash files (1/6)',
@@ -80,6 +75,16 @@ export function activate(context: ExtensionContext) {
       })
       .then(() => stashChanges(Root))
       .catch(msg => Promise.reject(msg))
+
+  const resolveCurrent = async (Root: string, From: string, progress: any) => {
+    progress.report({ increment: 0, message: `Switching to '${From}'...` })
+    return shell(Root, `git switch ${From}`, `'${From}' not found`)
+      .then(() => {
+        progress.report({ increment: 11, message: 'Pulling from remote...' })
+        shell(Root, 'git pull', 'Unable to pull the repo')
+      })
+      .catch(msg => Promise.reject(msg))
+  }
 
   const resolveFromBranch = async (Locals: string[]) => {
     if (Locals.includes('main')) return 'main'
@@ -181,24 +186,39 @@ export function activate(context: ExtensionContext) {
     return true
   }
 
-  const Deploy = (Root: string, Folder: string, To: string, Commit: string) =>
+  const Deploy = (Root: string, Folder: string, To: string, Commit: string, Progess: any) => {
+    Progess.report({ increment: 33, message: 'Creating temperary worktree' })
     shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Git checkout')
-      .then(() => shell(Root, `git --work-tree ${Folder} add --all`, 'Staging files'))
-      .then(() =>
+      .then(() => {
+        Progess.report({ increment: 44, message: 'Adding files to worktree' })
+        return shell(Root, `git --work-tree ${Folder} add --all`, 'Staging files')
+      })
+      .then(() => {
+        Progess.report({ increment: 55, message: 'Commiting files in worktree' })
         shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Git commit')
-      )
-      .then(() => shell(Root, `git push origin HEAD:${To} --force`, 'Git push'))
+      })
+      .then(() => {
+        Progess.report({ increment: 66, message: 'Pushing to remote branch' })
+        shell(Root, `git push origin HEAD:${To} --force`, 'Git push')
+      })
       .catch(msg => Promise.reject(msg))
+  }
 
-  const cleanUp = async (Root: string, To: string, Prev: string) =>
-    shell(Root, `git checkout -f ${Prev}`, 'Git checkout')
-      .then(() => shell(Root, `git branch -D ${To}-deploy`, 'Clean up'))
+  const cleanUp = async (Root: string, To: string, Prev: string, Progess: any) => {
+    Progess.report({ increment: 77, message: 'Cleaning' })
+    return shell(Root, `git checkout -f ${Prev}`, 'Git checkout')
+      .then(() => {
+        Progess.report({ increment: 88, message: 'Cleaning temp worktree' })
+        shell(Root, `git branch -D ${To}-deploy`, 'Clean up')
+      })
       .catch(msg => Promise.reject(msg))
+  }
 
   const disposable = commands.registerCommand('gh-deploy.deploy', () => {
     Config()
       .then(({ git, fromBranch, toBranch, folder, commit, preTask }) => {
         Promise.resolve()
+          .then(() => resolveChanges(git.Root))
           .then(() => {
             return window.withProgress(
               {
@@ -208,24 +228,13 @@ export function activate(context: ExtensionContext) {
               },
               async (progress, token) => {
                 // token.onCancellationRequested(() => Promise.reject('User cancelled'))
-                progress.report({ increment: 0, message: 'Looking for changes...' })
-                return resolveChanges(git.Root)
+                return resolveCurrent(git.Root, fromBranch, progress)
                   .then(() => {
-                    progress.report({ increment: 20, message: 'Getting Things Ready...' })
-                    return resolveCurrent(git.Root, fromBranch)
-                  })
-                  .then(() => {
-                    progress.report({ increment: 40, message: 'Running Pre Deploy Task...' })
+                    progress.report({ increment: 22, message: 'Running Pre Deploy Task...' })
                     return shell(git.Root, preTask, 'PreDeploy')
                   })
-                  .then(() => {
-                    progress.report({ increment: 60, message: 'Deploying to GitHub...' })
-                    return Deploy(git.Root, folder, toBranch, commit)
-                  })
-                  .then(() => {
-                    progress.report({ increment: 80, message: 'Finishing Up...' })
-                    return cleanUp(git.Root, toBranch, git.Current)
-                  })
+                  .then(() => Deploy(git.Root, folder, toBranch, commit, progress))
+                  .then(() => cleanUp(git.Root, toBranch, git.Current, progress))
                   .then(() => {
                     progress.report({ increment: 100, message: 'Successfully Deployed' })
                   })
