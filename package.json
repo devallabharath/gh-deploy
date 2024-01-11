@@ -1,6 +1,6 @@
 {
   "name": "gh-deploy",
-  "displayName": "gh-deploy",
+  "displayName": "GH-Deploy",
   "description": "git hub pages deploy",
   "publisher": "devalla",
   "version": "0.0.1",
@@ -58,7 +58,7 @@
         "gh-deploy.defaultPreTask": {
           "type": "string",
           "default": "npm run build",
-          "markdownDescription": "Default task to run before deploying"
+          "markdownDescription": "Default task to run before deploying. Leave empty for skip..."
         },
         "gh-deploy.silentDeploy": {
           "type": "boolean",

@@ -1,3 +1,5 @@
+import { ExecException } from 'child_process'
+
 type quickPickType = (
   items: string[],
   title: string,
@@ -12,15 +14,17 @@ type quickInputType = (
   password?: boolean
 ) => Promise<string | undefined>
 
-type shellType = (dir: string, cmd: string) => Promise<{ err: boolean; msg: string }>
-
-type configType = {[property: string]: string}[]
+type shellType = (dir: string, cmd: string, errMsg: string) => Promise<string>
 
 type gitType = {
-  Root: string,
-  Current: string,
-  Locals: string[],
+  Root: string
+  Current: string
+  Locals: string[]
   Remotes: string[]
 }
 
-export { quickPickType, quickInputType, gitType, shellType, configType }
+type gitinfoType = (dir: string) => Promise<gitType | string>
+
+type errMsgType = (title: string, dir: string, e: ExecException, err: string) => string
+
+export { quickPickType, quickInputType, gitType, gitinfoType, shellType, errMsgType }
