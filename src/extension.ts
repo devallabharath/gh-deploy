@@ -55,9 +55,9 @@ export function activate(context: ExtensionContext) {
       'Enter a name to stash..',
       'Stash Name'
     )
-    if (!name || name === '') return Promise.reject(new Error('User cancelled'))
-    const msg = await shell(Root, `git stash save '${name}'`, 'failed to stash')
-    if (msg === 'failed to stash') return Promise.reject(msg)
+    if (!name || name === '' || name === ' ') return Promise.reject('User cancelled')
+    const msg = await shell(Root, `git stash save '${name}'`, 'Git Stash')
+    if (msg === 'Git Stash') return Promise.reject(msg)
     return Promise.resolve(name)
   }
 
@@ -70,18 +70,17 @@ export function activate(context: ExtensionContext) {
           'GH-Pages: Uncommited Files',
           'You have uncommited changes, stash to continue...'
         )
-        if (!proceed || proceed === 'Exit') return Promise.reject(new Error('user cancelled'))
-        return Promise.resolve()
+        if (!proceed || proceed === 'Exit') return Promise.reject('User cancelled')
+        return Promise.resolve(stashChanges(Root))
       })
-      .then(() => stashChanges(Root))
       .catch(msg => Promise.reject(msg))
 
-  const resolveCurrent = async (Root: string, From: string, progress: any) => {
-    progress.report({ increment: 0, message: `Switching to '${From}'...` })
-    return shell(Root, `git switch ${From}`, `'${From}' not found`)
+  const resolveCurrent = async (Root: string, From: string, Progress: any) => {
+    Progress.report({ increment: 0, message: `Switching to '${From}'...` })
+    return shell(Root, `git checkout ${From}`, `Git Checkout`)
       .then(() => {
-        progress.report({ increment: 11, message: 'Pulling from remote...' })
-        shell(Root, 'git pull', 'Unable to pull the repo')
+        Progress.report({ increment: 11, message: 'Pulling from remote...' })
+        return shell(Root, 'git pull', 'Git Pull')
       })
       .catch(msg => Promise.reject(msg))
   }
@@ -186,30 +185,30 @@ export function activate(context: ExtensionContext) {
     return true
   }
 
-  const Deploy = (Root: string, Folder: string, To: string, Commit: string, Progess: any) => {
+  const Deploy = async (Root: string, Folder: string, To: string, Commit: string, Progess: any) => {
     Progess.report({ increment: 33, message: 'Creating temperary worktree' })
-    shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Git checkout')
+    return shell(Root, `git --work-tree ${Folder} checkout --orphan ${To}-deploy`, 'Git checkout')
       .then(() => {
         Progess.report({ increment: 44, message: 'Adding files to worktree' })
         return shell(Root, `git --work-tree ${Folder} add --all`, 'Staging files')
       })
       .then(() => {
         Progess.report({ increment: 55, message: 'Commiting files in worktree' })
-        shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Git commit')
+        return shell(Root, `git --work-tree ${Folder} commit -m '${Commit}'`, 'Git commit')
       })
       .then(() => {
         Progess.report({ increment: 66, message: 'Pushing to remote branch' })
-        shell(Root, `git push origin HEAD:${To} --force`, 'Git push')
+        return shell(Root, `git push origin HEAD:${To} --force`, 'Git push')
       })
       .catch(msg => Promise.reject(msg))
   }
 
   const cleanUp = async (Root: string, To: string, Prev: string, Progess: any) => {
-    Progess.report({ increment: 77, message: 'Cleaning' })
-    return shell(Root, `git checkout -f ${Prev}`, 'Git checkout')
+    Progess.report({ increment: 77, message: 'Switching to prev branch' })
+    return shell(Root, `git checkout --force ${Prev}`, 'Git Checkout')
       .then(() => {
         Progess.report({ increment: 88, message: 'Cleaning temp worktree' })
-        shell(Root, `git branch -D ${To}-deploy`, 'Clean up')
+        return shell(Root, `git branch -D ${To}-deploy`, 'Clean up')
       })
       .catch(msg => Promise.reject(msg))
   }
@@ -238,7 +237,7 @@ export function activate(context: ExtensionContext) {
                   .then(() => {
                     progress.report({ increment: 100, message: 'Successfully Deployed' })
                   })
-                  .catch(msg => Promise.reject(msg))
+                  .catch(msg => window.showErrorMessage(msg))
               }
             )
           })
