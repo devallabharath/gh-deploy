@@ -29,7 +29,5 @@ This extension contributes the following settings:
 ```
 ---
 
-## Release Notes v0.0.2 preRelease
-* Major Performance Changes.
-* Many Bug Fixes
-* Many Code Refactors
+## Release Notes v0.0.3 preRelease
+* Added Icons for extention
