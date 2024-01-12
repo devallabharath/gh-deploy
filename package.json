@@ -1,9 +1,19 @@
 {
   "name": "gh-deploy",
-  "displayName": "GH-Deploy",
-  "description": "git hub pages deploy",
-  "publisher": "devalla",
+  "displayName": "GH Deploy",
+  "description": "Push a directory to git hub remote branch",
+  "publisher": "bharathdevalla",
   "version": "0.0.2",
+  "icon": "assets/logo.png",
+  "homepage": "https://github.com/devallabharath/gh-deploy/blob/master/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devallabharath/gh-deploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devallabharath/gh-deploy/issues"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -16,15 +26,15 @@
     "commands": [
       {
         "command": "gh-deploy.deploy",
-        "category": "GH-Pages",
-        "title": "Deploy",
+        "category": "GH Deploy",
+        "title": "GH Deploy",
         "icon": "$(server)"
       }
     ],
     "menus": {
       "scm/title": [
         {
-          "when": "scmProvider == git",
+          "when": "hasGitRepository",
           "command": "gh-deploy.deploy",
           "group": "navigation"
         }
@@ -36,7 +46,7 @@
         "gh-deploy.defaultToBranch": {
           "title": "Default Branch: 'To'",
           "type": "string",
-          "default": "website",
+          "default": "",
           "markdownDescription": "Default remote branch to deploy"
         },
         "gh-deploy.defaultFromBranch": {
@@ -47,7 +57,7 @@
         },
         "gh-deploy.defaultFolder": {
           "type": "string",
-          "default": "build",
+          "default": "",
           "markdownDescription": "Default 'Folder' to deploy"
         },
         "gh-deploy.defaultCommitMessage": {
@@ -57,7 +67,7 @@
         },
         "gh-deploy.defaultPreTask": {
           "type": "string",
-          "default": "npm run build",
+          "default": "",
           "markdownDescription": "Default task to run before deploying. Leave empty for skip..."
         },
         "gh-deploy.silentDeploy": {
@@ -78,15 +88,11 @@
     "package": "webpack --mode production --devtool hidden-source-map",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src --ext ts"
+    "pretest": "npm run compile-tests && npm run compile && npm run lint"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@types/node": "18.x",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "eslint": "^8.56.0",
     "typescript": "^5.3.3",
     "ts-loader": "^9.5.1",
     "webpack": "^5.89.0",
