@@ -3,6 +3,11 @@
 out/**
 node_modules/**
 src/**
+release
+yarn.lock
+bun.lockb
+package-lock.json
+prePublish.sh
 .gitignore
 .yarnrc
 webpack.config.js

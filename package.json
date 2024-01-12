@@ -3,7 +3,7 @@
   "displayName": "GH Deploy",
   "description": "Push a directory to git hub remote branch",
   "publisher": "bharathdevalla",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "icon": "assets/logo.png",
   "homepage": "https://github.com/devallabharath/gh-deploy/blob/master/README.md",
   "repository": {
@@ -28,7 +28,7 @@
         "command": "gh-deploy.deploy",
         "category": "GH Deploy",
         "title": "GH Deploy",
-        "icon": "$(server)"
+        "icon": "assets/icon.svg"
       }
     ],
     "menus": {
@@ -68,7 +68,7 @@
         "gh-deploy.defaultPreTask": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Default task to run before deploying. Leave empty for skip..."
+          "markdownDescription": "Default task to run before deploying. Leave empty to skip..."
         },
         "gh-deploy.silentDeploy": {
           "type": "boolean",
