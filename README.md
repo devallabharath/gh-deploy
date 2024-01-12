@@ -1,4 +1,8 @@
-# GH-Deploy
+
+<h1 align="center">GH Deploy</h1>
+<p align="center">
+  <img src="./assets/logo.png" width="120" title="GH Deploy">
+</p>
 
 Push folders to the github remote branch. Also can be used as deploying gh-pages after initial setup with official gh-pages tool.
 
@@ -23,14 +27,9 @@ This extension contributes the following settings:
   defaultPreTask: ''
 }
 ```
+---
 
-<!-- ## Known Issues -->
-
-## Release Notes
-
-### v0.0.2 preRelease
+## Release Notes v0.0.2 preRelease
 * Major Performance Changes.
 * Many Bug Fixes
 * Many Code Refactors
-
----
