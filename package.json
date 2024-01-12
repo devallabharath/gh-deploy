@@ -3,7 +3,7 @@
   "displayName": "GH Deploy",
   "description": "Push a directory to git hub remote branch",
   "publisher": "bharathdevalla",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "icon": "assets/logo.png",
   "homepage": "https://github.com/devallabharath/gh-deploy/blob/master/README.md",
   "repository": {
