@@ -1,0 +1,104 @@
+{
+  "name": "gh-deploy",
+  "displayName": "GH Deploy",
+  "description": "Push a directory to git hub remote branch",
+  "publisher": "bharathdevalla",
+  "version": "0.0.3",
+  "icon": "assets/logo.png",
+  "homepage": "https://github.com/devallabharath/gh-deploy/blob/master/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devallabharath/gh-deploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devallabharath/gh-deploy/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gh-deploy.deploy",
+        "category": "GH Deploy",
+        "title": "GH Deploy",
+        "icon": "assets/icon.svg"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "when": "hasGitRepository",
+          "command": "gh-deploy.deploy",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "GH Deploy",
+      "properties": {
+        "gh-deploy.defaultToBranch": {
+          "title": "Default Branch: 'To'",
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Default remote branch to deploy"
+        },
+        "gh-deploy.defaultFromBranch": {
+          "title": "Default Branch: 'From'",
+          "type": "string",
+          "default": "main",
+          "markdownDescription": "Default local branch to deploy from"
+        },
+        "gh-deploy.defaultFolder": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Default 'Folder' to deploy"
+        },
+        "gh-deploy.defaultCommitMessage": {
+          "type": "string",
+          "default": "update",
+          "markdownDescription": "Default commit message for fallback"
+        },
+        "gh-deploy.defaultPreTask": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Default task to run before deploying. Leave empty to skip..."
+        },
+        "gh-deploy.silentDeploy": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Enable / Disable verbose logging"
+        }
+      }
+    }
+  },
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "18.x",
+    "typescript": "^5.3.3",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "@vscode/test-cli": "^0.0.4",
+    "@vscode/test-electron": "^2.3.8"
+  },
+  "dependencies": {}
+}
